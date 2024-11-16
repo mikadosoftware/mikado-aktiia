@@ -1,7 +1,7 @@
-#pip install --upgrade pymupdf
 import pymupdf
 from pprint import pprint as pp
 import pandas as pd
+import os
 
 def convert_dual_row(row):
     if len(row) == 13:
@@ -75,10 +75,10 @@ def find_bp_readings(tbl_as_extract):
     df = pd.DataFrame(bodyrows, columns=['datetime', 'sbp', 'dbp','hr'])
     return df
 
-def run():
+def extract_pdf(filepath):
 
-    file = '/home/pbrian/Downloads/AktiiaReport_pb_Nov2024.pdf'
-    doc = pymupdf.open(file) # open a document
+    
+    doc = pymupdf.open(filepath) # open a document
     tables = pd.DataFrame()
     for c, page in enumerate(doc):
         foundtables = page.find_tables(strategy='text')
@@ -107,6 +107,16 @@ def run2():
     df = find_bp_readings(extract)
     print(df)
 
+def run(f):
+    f = f if f else '/home/pbrian/Downloads/AktiiaReport_pb_Nov2024.pdf'
+    basename = os.path.basename(f)
+    dframe = extract_pdf(f)
+    newloc = os.path.join('/home/pbrian/Desktop/readings',
+                          basename.replace(".pdf", ".parquet"))
+    dframe.to_parquet(path=newloc)
+    print(dframe)
+
 if __name__ == '__main__':
-    run()
+    f = None
+    run(f)
 
