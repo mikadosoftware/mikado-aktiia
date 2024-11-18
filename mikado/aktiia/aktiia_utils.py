@@ -1,7 +1,32 @@
+"""
+copyright: paul@mikadosoftware.com
+
+so the adhoc row calc stuff is getting awkward.
+I will extract every row, and see if I can find enought signal - I think : will
+be useful
+
+
+"""
+
+HELPSTRING="""
+Usage:
+    aktiia_utils <filepath>
+    aktiia_utils (-h | --help | --version)
+        
+Options:
+    -h, --help  Show this screen and exit.
+
+"""
+
 import pymupdf
 from pprint import pprint as pp
 import pandas as pd
 import os
+
+def grab_row(row):
+    with open('/tmp/foo.txt', 'a') as fo:
+        fo.write(repr(row) + "\n")
+
 
 def convert_dual_row(row):
     if len(row) == 13:
@@ -38,9 +63,9 @@ def convert_dual_row(row):
     return [lh, rh]
 
 def find_bp_readings(tbl_as_extract):
+    """ Given a table from pdf, find the rows of BP readings if any"""
     headerflag = False
     headerrow = []
-    bodyrows = []
     for row in tbl_as_extract:
         # bad table
         mightbetext = ''.join(row)
@@ -66,8 +91,23 @@ def find_bp_readings(tbl_as_extract):
                     outflag = True
             if outflag:
                 continue
-            # do we have two rows across page?
-            lh,rh = convert_dual_row(row)
+            yield row
+    
+
+def table_to_df_captureonly(tbl_extract):
+
+    for row in find_bp_readings(tbl_extract):
+        grab_row(row)
+    df = pd.DataFrame()
+    return df
+
+def table_to_df(tbl_extract):
+
+    for row in find_bp_readings(tbl_extract):
+    
+            grab_row(row)
+            lh, rh = None, None
+            #lh,rh = convert_dual_row(row)
             if lh:
                 bodyrows.append(lh)
             if rh:
@@ -76,22 +116,23 @@ def find_bp_readings(tbl_as_extract):
     return df
 
 def extract_pdf(filepath):
-
+    """open `filepath` (assuming it is a formatted aktiia pdf report) and walk
+    each page finding tables and extracting bp readings. """
     
     doc = pymupdf.open(filepath) # open a document
-    tables = pd.DataFrame()
+    bigtable = pd.DataFrame()
     for c, page in enumerate(doc):
         foundtables = page.find_tables(strategy='text')
         for tbl in foundtables.tables:
             extract = tbl.extract()
-            df = find_bp_readings(extract)
+            df = table_to_df_captureonly(extract)              
+                
             print(f'page: {c} {page.number}')
-            #print(df)
-            if tables.empty:
-                tables = df
+            if bigtable.empty:
+                bigtable = df
             else:
-                tables = pd.concat([tables, df], axis=0)
-    print(tables)
+                bigtable = pd.concat([bigtable, df], axis=0)
+    return bigtable
 
 def run2():
 
@@ -108,15 +149,29 @@ def run2():
     print(df)
 
 def run(f):
-    f = f if f else '/home/pbrian/Downloads/AktiiaReport_pb_Nov2024.pdf'
+    # f :'/home/pbrian/Downloads/AktiiaReport_pb_Nov2024.pdf'
     basename = os.path.basename(f)
     dframe = extract_pdf(f)
     newloc = os.path.join('/home/pbrian/Desktop/readings',
-                          basename.replace(".pdf", ".parquet"))
-    dframe.to_parquet(path=newloc)
+                          basename.replace(".pdf", ".csv"))
+    #dframe.to_parquet(path=newloc)
+    dframe.to_csv(path_or_buf=newloc) #using csv because no network atm so cannot pip
     print(dframe)
 
+def foo():
+    folder = '/home/pbrian/Downloads/'
+    files = [f for f in os.listdir(folder) if f.startswith('Aktiia')]
+    for f in files:
+        fpath = os.path.join(folder, f)
+        print(fpath)
+        run(fpath)
+
+
 if __name__ == '__main__':
-    f = None
-    run(f)
+    foo()
+
+    #from docopt import docopt
+    #args = docopt(HELPSTRING)
+    #filepath = args['<filepath>']
+    #run(filepath)
 
