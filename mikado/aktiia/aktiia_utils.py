@@ -5,6 +5,26 @@ so the adhoc row calc stuff is getting awkward.
 I will extract every row, and see if I can find enought signal - I think : will
 be useful
 
+I haver broken this into two stages - first get a reasinable text extractin and
+then convert that text to valid dataframe
+
+the first part give us
+
+['27', 'May,', '24', '16:01', '127', '83', '65', '1 June,', '24', '09:43', '145', '97', '72', '']
+['1', 'June,', '24', '00:19', '133', '85', '73', '1 June,', '24', '09:51', '131', '83', '62', '']
+['1', 'June,', '24', '00:36', '151', '98', '72', '1 June,', '24', '09:59', '135', '86', '60', '']
+['1', 'June,', '24', '00:45', '137', '87', '76', '1 June,', '24', '13:19', '136', '85', '77', '']
+['1', 'June,', '24', '00:54', '132', '84', '63', '1 June,', '24', '14:02', '138', '86', '76', '']
+['1', 'June,', '24', '01:34', '122', '77', '61', '1 June,', '24', '14:10', '137', '86', '74', '']
+['1', 'June,', '24', '02:54', '128', '81', '58', '1 June,', '24', '14:54', '132', '82', '65', '']
+['1', 'June,', '24', '03:34', '138', '86', '74', '1 June,', '24', '15:03', '138', '86', '71', '']
+['1', 'June,', '24', '04:14', '131', '83', '55', '1 June,', '24', '15:16', '136', '87', '64', '']
+['1', 'June,', '24', '04:54', '121', '76', '53', '1 June,', '24', '15:30', '140', '88', '65', '']
+
+there is some variablility but for the most part I think we can work with -
+dates up to :, then three readings, 
+
+
 
 """
 
@@ -23,44 +43,40 @@ from pprint import pprint as pp
 import pandas as pd
 import os
 
+def test_process_rows():
+    rows = [
+['27', 'May,', '24', '16:01', '127', '83', '65', '1 June,', '24', '09:43', '145', '97', '72', ''],
+['1', 'June,', '24', '00:19', '133', '85', '73', '1 June,', '24', '09:51', '131', '83', '62', ''],
+['1', '1', 'June,', '24', '00:36', '151', '98', '72', '1 June,', '24', '09:59', '135', '86', '60']
+]
+    for row in rows:
+        process_text_row(row)
+
+def process_text_row(row):
+    s = ' '.join(row)
+    #remove double spaces
+    while '  ' in s:
+        s = s.replace('  ',' ')
+    s = s.replace(',','')
+    #split up first set
+    # we want to find the time, which works backawars to everything rles 
+    # 27 May 24 16:01 127 83 65 1 June 24 09:43 145 97 72
+    
+    print(s)
+
+    idx = s.find(":") + 3
+    lh_datetime = s[:idx]
+    remains = s[idx:]
+    lh_bp = remains.strip().split(" ")[:3]
+    print(lh_datetime)
+    print(lh_bp)
+    x = ' '.join(lh_bp)
+    idx2 = remains.find(x)+len(x)
+    print(remains[idx2:])
+
 def grab_row(row):
     with open('/tmp/foo.txt', 'a') as fo:
         fo.write(repr(row) + "\n")
-
-
-def convert_dual_row(row):
-    if len(row) == 13:
-        lh_date, lh_year, lh_time, lh_sbp, lh_dbp, lh_hr, rh_date, rh_year, rh_time, rh_sbp, rh_dbp, rh_hr,_ = row
-        lh = [lh_date + " " + lh_year + " " + lh_time, lh_sbp, lh_dbp, lh_hr]
-        rh = [rh_date + " " + rh_year + " " + rh_time, rh_sbp, rh_dbp, rh_hr]
-    elif len(row) == 14:
-        #['8 November,', '24', '18:34', '135', '89', '65', '9', 'November,', '24', '05:03', '124', '77', '54', '']
-        if len(row[0]) > 2: 
-            lh_date, lh_year, lh_time, lh_sbp, lh_dbp, lh_hr, rh_day, rh_mth, rh_year, rh_time, rh_sbp, rh_dbp, rh_hr,_ = row
-            rh_date = rh_day + " " + rh_mth 
-        else:
-        #['9', 'November,', '24', '19:27', '128', '82 57', '10', 'November,', '24', '21:37', '154', '96', '64', '']
-            lh_day, lh_mth, lh_year, lh_time, lh_sbp, lh_dbp_hr,  rh_day, rh_mth, rh_year, rh_time, rh_sbp, rh_dbp, rh_hr,_ = row
-            rh_date = rh_day + " " + rh_mth 
-            lh_date = lh_day + " " + lh_mth
-            lh_dbp, lh_hr = lh_dbp_hr.split(" ")
-
-        lh = [lh_date + " " + lh_year + " " + lh_time, lh_sbp, lh_dbp, lh_hr]
-        rh = [rh_date + " " + rh_year + " " + rh_time, rh_sbp, rh_dbp, rh_hr]
-
-    elif len(row) == 7:
-        #['1', '1 November,', '24', '15:37', '144', '90 82', '']
-        lh_datetime = row[0]+row[1]+ " " + row[2] + " " + row[3]
-        lh_sbp = row[4]
-        try:
-            lh_dbp, lh_hr = row[5].split(" ")
-        except:
-            import pdb;pdb.set_trace()
-        lh = [lh_datetime, lh_sbp, lh_dbp, lh_hr]
-        rh = None
-    else:
-        import pdb;pdb.set_trace()
-    return [lh, rh]
 
 def find_bp_readings(tbl_as_extract):
     """ Given a table from pdf, find the rows of BP readings if any"""
@@ -101,19 +117,6 @@ def table_to_df_captureonly(tbl_extract):
     df = pd.DataFrame()
     return df
 
-def table_to_df(tbl_extract):
-
-    for row in find_bp_readings(tbl_extract):
-    
-            grab_row(row)
-            lh, rh = None, None
-            #lh,rh = convert_dual_row(row)
-            if lh:
-                bodyrows.append(lh)
-            if rh:
-                bodyrows.append(rh)
-    df = pd.DataFrame(bodyrows, columns=['datetime', 'sbp', 'dbp','hr'])
-    return df
 
 def extract_pdf(filepath):
     """open `filepath` (assuming it is a formatted aktiia pdf report) and walk
@@ -134,19 +137,6 @@ def extract_pdf(filepath):
                 bigtable = pd.concat([bigtable, df], axis=0)
     return bigtable
 
-def run2():
-
-    file = '/home/pbrian/Downloads/AktiiaReport_pb_Nov2024.pdf'
-    doc = pymupdf.open(file) # open a document
-    tables = []
-
-    page = doc[9]
-    foundtables = page.find_tables(strategy='text')
-
-    extract = foundtables.tables[0].extract()
-    import pdb;pdb.set_trace()
-    df = find_bp_readings(extract)
-    print(df)
 
 def run(f):
     # f :'/home/pbrian/Downloads/AktiiaReport_pb_Nov2024.pdf'
@@ -168,7 +158,8 @@ def foo():
 
 
 if __name__ == '__main__':
-    foo()
+    test_process_rows()
+    #foo()
 
     #from docopt import docopt
     #args = docopt(HELPSTRING)
