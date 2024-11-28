@@ -53,26 +53,32 @@ def test_process_rows():
         process_text_row(row)
 
 def process_text_row(row):
+    print(row)
     s = ' '.join(row)
-    #remove double spaces
+    #remove double spaces, clean up characters
     while '  ' in s:
         s = s.replace('  ',' ')
     s = s.replace(',','')
+
     #split up first set
     # we want to find the time, which works backawars to everything rles 
     # 27 May 24 16:01 127 83 65 1 June 24 09:43 145 97 72
     
-    print(s)
-
+    # find lh timestamp, then minutes, plus a space 16:01 ]
     idx = s.find(":") + 3
     lh_datetime = s[:idx]
+    # we now should have the datetime
+    print(lh_datetime)
     remains = s[idx:]
     lh_bp = remains.strip().split(" ")[:3]
-    print(lh_datetime)
     print(lh_bp)
+
     x = ' '.join(lh_bp)
     idx2 = remains.find(x)+len(x)
     print(remains[idx2:])
+    print(":" in remains)
+    print('###############')
+
 
 def grab_row(row):
     with open('/tmp/foo.txt', 'a') as fo:
