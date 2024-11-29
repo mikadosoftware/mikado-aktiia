@@ -25,7 +25,8 @@ there is some variablility but for the most part I think we can work with -
 dates up to :, then three readings, 
 
 
-
+[ ] for each day grab max and min and plot them
+[ ] surely better ways with jupyter etc
 """
 
 HELPSTRING="""
@@ -191,7 +192,7 @@ def run(f):
     dframe = parse_intermediate_row_data(rawpath) 
 
     newloc = os.path.join(READINGS, basename.replace(".pdf", ".parq"))
- #   dframe.to_parquet(path=newloc)
+    dframe.to_parquet(path=newloc)
     print(dframe)
 
 def run_all_pdfs_on_disk():
@@ -202,15 +203,45 @@ def run_all_pdfs_on_disk():
         run(fpath)
         break
 
+def plotit(dframe):
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    # Data for plotting
+    days = dframe['datetime'].to_list()
+    x = []
+    miny = []
+    maxy = []
+    for day in days:
+        #take date, then  between 00 and 1159, then get those points and do min max
+        st = datetime.datetime.combine(day, datetime.time.min)
+        ed = datetime.datetime.combine(day, datetime.time.max)
+     
+        dframe1 = dframe[dframe['datetime'].between(st, ed)]
+        sbpy = [int(i) for i in dframe1['sbp'].to_list()]
+        miny.append(min(sbpy))
+        maxy.append(max(sbpy))
+        x.append(day)
+        
+
+    print(miny[:20], maxy[:20])
+    fig, ax = plt.subplots()
+    ax.plot(x, miny, 'bo')
+    ax.plot(x, maxy, 'ro')
+
+    ax.set(xlabel='time (s)', ylabel='sbp',
+           title='plot')
+    ax.grid()
+
+    fig.savefig("test.png")
+    plt.show()
+
 FOLDER = '/home/pbrian/Downloads/'
 READINGS = '/home/pbrian/Desktop/readings' 
 if __name__ == '__main__':
-    #x = convertdates("1June2400:19")
-    #print(x)
-    #test_process_rows()
-    run_all_pdfs_on_disk()
-    #from docopt import docopt
-    #args = docopt(HELPSTRING)
-    #filepath = args['<filepath>']
-    #run(filepath)
 
+    #run_all_pdfs_on_disk()
+    dframe = pd.read_parquet(os.path.join(READINGS,
+        'AktiiaReport_pb_Jun2024.parq')) 
+    plotit(dframe)
+    
