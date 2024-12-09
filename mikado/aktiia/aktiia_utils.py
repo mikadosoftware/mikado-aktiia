@@ -27,11 +27,23 @@ dates up to :, then three readings,
 
 [ ] for each day grab max and min and plot them
 [ ] surely better ways with jupyter etc
+
+
+* we convert a aktiia pdf to a dataframe of readings
+* we store the readings in one place
+* we can see whole readings as one df
+* we can plot the whole readings
+
+
+
 """
 
 HELPSTRING="""
 Usage:
-    aktiia_utils <filepath>
+    aktiia_utils pdf2dframe <filepath>
+    aktiia_utils show_known_dframes
+    aktiia_utils show_known_pdfs
+
     aktiia_utils (-h | --help | --version)
         
 Options:
@@ -236,12 +248,34 @@ def plotit(dframe):
     fig.savefig("test.png")
     plt.show()
 
+
+def run_script():
+    from docopt import docopt
+
+   # aktiia_utils pdf2dframe (--all | <filepath>)
+   # aktiia_utils show_known_dframes
+   # aktiia_utils show_known_pdfs
+    
+        # docopt saves arguments and options as key:value pairs in a dictionary
+    args = docopt(HELPSTRING)
+    if args['pdf2dframe']:
+        if args['--all']:
+            run_all_pdfs_on_disk()
+        else:
+            filepath = args['<filepath>']
+            run(filepath)
+    elif args['show_known_dframes']:
+        print("show dframes")
+    elif args['show_known_pdfs']:
+        print("show pdfs")
+
+        dframe = pd.read_parquet(os.path.join(READINGS,
+                'AktiiaReport_pb_Jun2024.parq')) 
+        plotit(dframe)
+
+
 FOLDER = '/home/pbrian/Downloads/'
 READINGS = '/home/pbrian/Desktop/readings' 
 if __name__ == '__main__':
-
-    #run_all_pdfs_on_disk()
-    dframe = pd.read_parquet(os.path.join(READINGS,
-        'AktiiaReport_pb_Jun2024.parq')) 
-    plotit(dframe)
+    run_script() 
     
