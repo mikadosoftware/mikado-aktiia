@@ -1,2 +1,5 @@
 # populate as needed
 pymupdf
+sphinx
+docopt
+
