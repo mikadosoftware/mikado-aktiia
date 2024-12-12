@@ -23,5 +23,7 @@ python:
    - method: setuptools
      path: .
         
-
+# Please note this uses setup.py whcih is supposed to be deprecated.
+# but it causes readthedocs to install requirements and use setup.py to install
+# current location . which is this package.
 
