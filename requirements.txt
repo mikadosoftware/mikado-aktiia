@@ -2,4 +2,4 @@
 pymupdf
 sphinx
 docopt
-
+pandas
